@@ -28,3 +28,6 @@ Todas as funcionalidades da aba Débitos
 # Instalação
 1. pip install -r requirements.txt ou (pip install uvicorn fastapi sqlalchemy motor pymongo jinja2 pydantic alembic)
 2. python -m uvicorn app.main:app --reload
+
+# Contribuição
+Douglas Amorim Ribeiro
