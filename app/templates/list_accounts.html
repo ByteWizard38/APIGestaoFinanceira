@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Accounts List</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <a class="home-link" href="/"><</a>
+    <h1>Contas</h1>
+
+    <h1>Criar Conta</h1>
+    <form id="create-account-form">
+        <label for="name">Nome</label>
+        <input type="text" id="name" name="name"> <br><br>
+        <label for="balance">Quantia inicial</label>
+        <input type="text" id="balance" name="balance"><br><br>
+        <button class="criar-conta" type="submit">Criar</button>
+    </form>
+
+    <h2>Comparação de Saldos das Contas</h2>
+    <canvas id="balanceChart" width="400" height="200"></canvas>
+
+    <ul id="accounts-list">
+        {% for account in accounts %}
+            <li data-account-id="{{ account.id }}">
+                <h2>Conta:</h2>
+                <h2>{{ account.id }}</h2>
+                <h2>{{ account.name }}</h2>
+                <h1>R${{ account.balance }}0</h1>
+                <button class="delete-account" data-account-id="{{ account.id }}">Excluir</button>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const createAccountForm = document.getElementById('create-account-form');
+            if (createAccountForm) {
+                createAccountForm.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    const name = document.getElementById('name').value;
+                    const balance = document.getElementById('balance').value;
+                    try {
+                        const response = await fetch('/accounts/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ name, balance }),
+                        });
+                        if (response.ok) {
+                            const result = await response.json();
+                            alert('Conta Criada!');
+                            window.location.reload(); 
+                        } else {
+                            const errorText = await response.text();
+                            alert('Error creating account: ' + errorText);
+                        }
+                    } catch (error) {
+                        alert('Network error: ' + error.message);
+                    }
+                });
+            }
+
+            
+            async function fetchAccountData(accountId) {
+                const response = await fetch(`/accounts/${accountId}/`);
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
+            }
+
+            async function fetchAllAccounts() {
+                const accountsList = document.getElementById('accounts-list');
+                const accountElements = accountsList.querySelectorAll('li[data-account-id]');
+                const accountDataPromises = Array.from(accountElements).map(element => {
+                    const accountId = element.getAttribute('data-account-id');
+                    return fetchAccountData(accountId);
+                });
+                try {
+                    const accountsData = await Promise.all(accountDataPromises);
+                    createChart(accountsData);
+                } catch (error) {
+                    console.error('Error fetching account data:', error);
+                    alert('Error fetching account data: ' + error.message);
+                }
+            }
+
+            function createChart(accountsData) {
+                const ctx = document.getElementById('balanceChart').getContext('2d');
+                const names = accountsData.map(account => account.name);
+                const balances = accountsData.map(account => account.balance);
+                const colors = balances.map(balance => balance < 0 ? 'rgba(255, 0, 0, 0.2)' : 'rgba(75, 192, 192, 0.2)');
+                const borderColors = balances.map(balance => balance < 0 ? 'rgba(255, 0, 0, 1)' : 'rgba(75, 192, 192, 1)');
+
+                const chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: names,
+                        datasets: [{
+                            label: 'Saldo das Contas',
+                            data: balances,
+                            backgroundColor: colors,
+                            borderColor: borderColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            fetchAllAccounts();
+
+            document.querySelectorAll('.delete-account').forEach(button => {
+                button.addEventListener('click', async function () {
+                    const accountId = this.getAttribute('data-account-id');
+                    try {
+                        const response = await fetch(`/accounts/${accountId}`, {
+                            method: 'DELETE',
+                        });
+                        if (response.ok) {
+                            alert('Conta Excluída com sucesso');
+                            window.location.reload();
+                        } else {
+                            const errorText = await response.text();
+                            alert('Error deleting account: ' + errorText);
+                        }
+                    } catch (error) {
+                        alert('Network error: ' + error.message);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debits List</title>
+</head>
+<body>
+    <a class="home-link" href="/"><</a>
+    <h1>Debits</h1>
+    <h1>Create Debit</h1>
+    <form id="create-debit-form">
+        <label for="account_id">ID da Conta</label>
+        <input type="text" id="account_id" name="account_id"><br><br>
+        <label for="amount">Quantia</label>
+        <input type="text" id="amount" name="amount"><br><br>
+        <label for="description">Descrição</label>
+        <input type="text" id="description" name="description"><br><br>
+        <button class="debitar" type="submit">Debitar</button>
+    </form>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <ul>
+        {% for debit in debits %}
+            <li>
+                <h2>{{ debit.description }}</h2>
+                <h1>R${{ debit.amount }}0</h1>
+                <button class="delete-debit" data-debit-id="{{ debit.id }}">Excluir</button>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const createDebitForm = document.getElementById('create-debit-form');
+            if (createDebitForm) {
+                createDebitForm.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    const account_id = document.getElementById('account_id').value;
+                    const amount = document.getElementById('amount').value;
+                    const description = document.getElementById('description').value;
+                    const response = await fetch(`/debits/?account_id=${account_id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ amount: amount, description: description }),
+                    });
+                    const result = await response.json();
+                    alert('Débito Criado!');
+                    
+                    window.location.reload();
+                });
+            }
+
+            document.querySelectorAll('.delete-debit').forEach(button => {
+                button.addEventListener('click', async function () {
+                    const debitId = this.getAttribute('data-debit-id');
+                    try {
+                        const response = await fetch(`/debits/${debitId}`, {
+                            method: 'DELETE',
+                        });
+                        if (response.ok) {
+                            alert('Débito Excluído com Sucesso');
+                            window.location.reload(); 
+                        } else {
+                            const result = await response.json();
+                            alert('Error deleting debit: ' + result.detail);
+                        }
+                    } catch (error) {
+                        alert('Network error: ' + error.message);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

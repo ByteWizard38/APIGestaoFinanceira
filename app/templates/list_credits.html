@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Credits List</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <a class="home-link" href="/"><</a>
+    <h1>Credits</h1>
+    <h1>Create Credit</h1>
+    <form id="create-credit-form">
+        <label for="account_id">ID da Conta</label> 
+        <input type="text" id="account_id" name="account_id"> <br> <br>
+        <label for="amount">Quantia</label> 
+        <input type="text" id="amount" name="amount"> <br><br>
+        <label for="description">Descrição</label> 
+        <input type="text" id="description" name="description"> <br><br>
+        <button class="creditar" type="submit">Creditar</button>
+    </form>
+    <ul>
+        {% for credit in credits %}
+            <li>
+                
+                <h2>{{ credit.description }}</h2>
+                <h1>R${{ credit.amount }}0</h1>
+                <button class="delete-credit" data-credit-id="{{ credit.id }}">Excluir</button>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const createCreditForm = document.getElementById('create-credit-form');
+            if (createCreditForm) {
+                createCreditForm.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    const account_id = document.getElementById('account_id').value;
+                    const amount = document.getElementById('amount').value;
+                    const description = document.getElementById('description').value;
+                    const response = await fetch(`/credits/?account_id=${account_id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ amount: amount, description: description }),
+                    });
+                    const result = await response.json();
+                    alert('Crédito Criado!');
+                    
+                    window.location.reload();
+                });
+            }
+
+            document.querySelectorAll('.delete-credit').forEach(button => {
+                button.addEventListener('click', async function () {
+                    const creditId = this.getAttribute('data-credit-id');
+                    try {
+                        const response = await fetch(`/credits/${creditId}`, {
+                            method: 'DELETE',
+                        });
+                        if (response.ok) {
+                            alert('Crédito Excluído com Sucesso!');
+                            window.location.reload();
+                        } else {
+                            const result = await response.json();
+                            alert('Error deleting credit: ' + result.detail);
+                        }
+                    } catch (error) {
+                        alert('Network error: ' + error.message);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
